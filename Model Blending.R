@@ -1,3 +1,10 @@
+################################################################################
+#
+# Perform Model blending
+# For more info reger to http://mlwave.com/kaggle-ensembling-guide/
+#
+################################################################################
+
 library(caret)
 library(gbm)
 
@@ -42,7 +49,7 @@ dataset_blend_test  = matrix(0, nrow(X_submission), length(clfs))
 j <- 0 
 for (clf in clfs){
   j <- j + 1
-  print( paste(j,clf))
+  print(paste(j,clf))
   
   ### Create a tempory array that is (Holdout_Size, N_Folds).
   ### Number of testing data x Number of folds , we will take the mean of the predictions later
@@ -64,19 +71,25 @@ for (clf in clfs){
     
     ### Stupid hack to fit the model
     if (clf == "gbm1"){
-      mod <- gbm(y_train~X1+X2+X3, data = data.frame(y_train,X_train), n.trees=1000, interaction.depth=3)
+      mod <- gbm(y_train~X1+X2+X3, data = data.frame(y_train,X_train), n.trees=1000, interaction.depth=3, train.fraction = 0.8)
+      best.iter <- gbm.perf(mod,method="test", plot.it = FALSE)
+      #best.iter <- gbm.perf(mod,method="cv")
+      print(paste("Best iter:",best.iter))
     }
     else if (clf == "gbm2"){
-      mod <- gbm(y_train~X1+X2+X3, data = data.frame(y_train,X_train), n.trees=1000, interaction.depth=8)
+      mod <- gbm(y_train~X1+X2+X3, data = data.frame(y_train,X_train), n.trees=1000, interaction.depth=8, train.fraction = 0.8)
+      best.iter <- gbm.perf(mod,method="test", plot.it = FALSE)
+      #best.iter <- gbm.perf(mod,method="cv")
+      print(paste("Best iter:",best.iter))
     }
     
     ### Predict the probability of current folds test set and store results.
     ### This output will be the basis for our blended classifier to train against,
     ### which is also the output of our classifiers
-    dataset_blend_train[-tmp_train, j] <- predict(mod, X_test, n.trees=1000, type="response")
+    dataset_blend_train[-tmp_train, j] <- predict(mod, X_test, n.trees=best.iter, type="response")
     
     ### Predict the probabilty for the holdout set and store results
-    dataset_blend_test_j[, i] <- predict(mod, X_submission, n.trees=1000, type="response")
+    dataset_blend_test_j[, i] <- predict(mod, X_submission, n.trees=best.iter, type="response")
   }
   
   ### Take mean of final holdout set folds
