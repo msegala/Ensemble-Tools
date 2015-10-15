@@ -97,6 +97,26 @@ for (clf in clfs){
 }
 
 
+################################################################
+#
+# We can use original features + the meta features
+#
+################################################################
+
+print ("Blending....")
+mod <- gbm(y ~ X1 + X2 + X3 + X1.1 + X2.1, data = data.frame(y,X,dataset_blend_train), n.trees=1000, interaction.depth=8, train.fraction = 0.8)
+y_submission = predict(mod, data.frame(X_submission,dataset_blend_test), type="response")
+
+
+
+
+################################################################
+#
+# We can use only the meta features
+#
+################################################################
+
+
 ### We now have a new dataset with dimensions (N_train X N_models)
 ### Fit a logistic regression and predict on blended holdout set
 print ("Blending....")
